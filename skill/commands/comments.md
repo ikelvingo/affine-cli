@@ -2,14 +2,14 @@
 
 ---
 
-## Comments Module
+## Comment Module
 
 ### list
 
 List comments on a document.
 
 ```bash
-affine-cli comments list [options]
+affine-cli comment list [options]
 ```
 
 | Option | Short | Required | Description |
@@ -25,7 +25,7 @@ affine-cli comments list [options]
 Create a comment on a document.
 
 ```bash
-affine-cli comments create [options]
+affine-cli comment create [options]
 ```
 
 | Option | Short | Required | Description |
@@ -42,7 +42,7 @@ affine-cli comments create [options]
 Update comment text.
 
 ```bash
-affine-cli comments update [options]
+affine-cli comment update [options]
 ```
 
 | Option | Short | Required | Description |
@@ -55,7 +55,7 @@ affine-cli comments update [options]
 Delete a comment.
 
 ```bash
-affine-cli comments delete [options]
+affine-cli comment delete [options]
 ```
 
 | Option | Short | Required | Description |
@@ -69,7 +69,7 @@ affine-cli comments delete [options]
 Mark comment as resolved/unresolved.
 
 ```bash
-affine-cli comments resolve [options]
+affine-cli comment resolve [options]
 ```
 
 | Option | Short | Required | Description |

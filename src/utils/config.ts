@@ -12,13 +12,16 @@
  *
  * 导出的配置项：
  * - AFFINE_BASE_URL: Affine 服务器地址（默认 https://app.affine.pro）
- * - AFFINE_API_TOKEN: 认证凭据
+ * - AFFINE_COOKIE: 会话 Cookie（0.27+ 认证凭据）
+ * - AFFINE_EMAIL / AFFINE_PASSWORD: 可选的非交互式自动登录凭据
  * - AFFINE_WORKSPACE_ID: 默认工作区 ID
+ * - AFFINE_CLIENT_VERSION: AFFiNE 客户端版本（默认 0.26.0）
  */
 
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { DEFAULT_AFFINE_CLIENT_VERSION } from './version.js';
 
 /**
  * GLOBAL_CONFIG_DIR: 全局配置文件目录
@@ -172,7 +175,19 @@ function env(name: string, file: Record<string, string>, fallback?: string): str
 	return process.env[name] || file[name] || fallback;
 }
 
-let cachedConfig: { baseUrl: string; apiToken?: string; defaultWorkspaceId?: string } | null = null;
+/**
+ * AffineConfig: 完整配置对象
+ */
+export type AffineConfig = {
+	baseUrl: string;
+	cookie?: string;
+	email?: string;
+	password?: string;
+	defaultWorkspaceId?: string;
+	clientVersion: string;
+};
+
+let cachedConfig: AffineConfig | null = null;
 
 export function clearConfigCache() {
 	cachedConfig = null;
@@ -181,24 +196,31 @@ export function clearConfigCache() {
 /**
  * loadConfig: 加载完整配置
  *
- * @returns 配置对象，包含 baseUrl、apiToken、cookie、defaultWorkspaceId
+ * @returns 配置对象，包含 baseUrl、cookie、email、password、defaultWorkspaceId、clientVersion
  *
  * 注意事项：
  * - AFFINE_BASE_URL 默认值为 https://app.affine.pro
+ * - AFFINE_CLIENT_VERSION 默认值为 0.26.0
  * - 其他配置项无默认值，从环境变量或配置文件读取
  */
-export function loadConfig() {
+export function loadConfig(): AffineConfig {
 	if (cachedConfig) return cachedConfig;
 
 	const file = loadConfigFile();
 	const baseUrl = validateBaseUrl(env('AFFINE_BASE_URL', file, 'https://app.affine.pro')!);
-	const apiToken = env('AFFINE_API_TOKEN', file);
+	const cookie = env('AFFINE_COOKIE', file);
+	const email = env('AFFINE_EMAIL', file);
+	const password = env('AFFINE_PASSWORD', file);
 	const defaultWorkspaceId = env('AFFINE_WORKSPACE_ID', file);
+	const clientVersion = env('AFFINE_CLIENT_VERSION', file, DEFAULT_AFFINE_CLIENT_VERSION)!;
 
 	cachedConfig = {
 		baseUrl,
-		apiToken,
-		defaultWorkspaceId
+		cookie,
+		email,
+		password,
+		defaultWorkspaceId,
+		clientVersion
 	};
 	return cachedConfig;
 }
@@ -267,14 +289,13 @@ export function getWorkspaceId(paramsWorkspaceId?: string): string {
 /**
  * 获取 API 配置
  *
- * @param paramsWorkspaceId - 可选的工作区 ID 参数
- * @returns API 配置对象，包含 apiUrl、apiToken、workspaceId
+ * @returns API 配置对象，包含 apiUrl、cookie
  */
 export function getApiConfig() {
 	const config = loadConfig();
 
 	return {
 		apiUrl: `${config.baseUrl}/graphql`,
-		apiToken: config.apiToken
+		cookie: config.cookie
 	};
 }

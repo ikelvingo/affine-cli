@@ -43,8 +43,8 @@ affine-cli database query [options]
 |--------|-------|----------|-------------|
 | --doc | -d | **Yes** | Document ID |
 | --id | -i | **Yes** | Database block ID |
-| --rows | -r | No | Comma-separated row IDs to return |
-| --columns | -c | No | Comma-separated column names to return |
+| --rows | - | No | Comma-separated row IDs to return |
+| --columns | - | No | Comma-separated column names to return |
 | --query | -q | No | Filter conditions in JSON format |
 | --full | -f | No | Return full row data |
 | --workspace | -w | No | Workspace ID |

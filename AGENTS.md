@@ -44,7 +44,8 @@ affine-cli <模块> <操作> [选项]
 关键配置项：
 
 - `AFFINE_BASE_URL` - Affine 服务器地址（默认 https://app.affine.pro）
-- `AFFINE_API_TOKEN` - 认证凭据
+- `AFFINE_COOKIE` - 会话 Cookie（AFFiNE 0.27+ 认证凭据）
+- `AFFINE_EMAIL` / `AFFINE_PASSWORD` - 可选，非交互式自动登录
 - `AFFINE_WORKSPACE_ID` - 默认工作区 ID
 
 ## 目录结构
@@ -63,7 +64,8 @@ src/
 │   └── file.ts       # 文件操作
 └── utils/            # 工具函数
     ├── config.ts     # 配置加载
-    ├── auth.ts       # 认证请求
+    ├── auth.ts       # 登录请求（邮箱/密码 → 会话 Cookie）
+    ├── authSession.ts    # 统一认证解析（Cookie / 自动登录，单飞）
     ├── graphqlClient.ts  # GraphQL 请求封装
     ├── wsClient.ts   # WebSocket 客户端
     └── cliUtils.ts   # CLI 辅助工具

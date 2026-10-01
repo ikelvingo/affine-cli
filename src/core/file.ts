@@ -134,14 +134,12 @@ export async function fileUploadHandler(params: {
 	form.append('0', payload, { filename: safeFilename, contentType: mime });
 
 	const endpoint = gql.endpoint;
-	const headers = gql.headers;
-	const cookie = gql.cookie;
+	const headers = gql.buildHeaders();
 
 	const response = await fetch(endpoint, {
 		method: 'POST',
 		headers: {
 			...headers,
-			Cookie: cookie,
 			...form.getHeaders()
 		},
 		body: form as any

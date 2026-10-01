@@ -23,24 +23,18 @@ import { authLoginHandler, authLogoutHandler, authStatusHandler } from '../core/
  */
 const authCommands: Record<string, CommandConfig> = {
 	/**
-	 * login 命令：使用账号或 Token 登录
-	 * 用法：login [--url <url>] [--token <token>] [--workspace <workspace-id>] [--local] [--force]
+	 * login 命令：使用邮箱/密码登录并保存会话 Cookie
+	 * 用法：login [--url <url>] [--workspace <workspace-id>] [--local] [--force]
 	 */
 	login: {
 		name: 'login',
-		description: '使用账号或 Token 登录',
-		usage: 'login [--url <url>] [--token <token>] [--workspace <workspace-id>] [--local] [--force]',
+		description: '使用邮箱/密码登录（保存会话 Cookie）',
+		usage: 'login [--url <url>] [--workspace <workspace-id>] [--local] [--force]',
 		args: [
 			{
 				name: 'url',
 				short: 'u',
 				description: 'Affine 服务器 URL（默认 https://app.affine.pro）',
-				type: 'string'
-			},
-			{
-				name: 'token',
-				short: 't',
-				description: 'API Token（可选，不提供则交互式登录）',
 				type: 'string'
 			},
 			{

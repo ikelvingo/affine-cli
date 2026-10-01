@@ -12,6 +12,7 @@
  */
 
 import { fetch } from 'undici';
+import { CLI_VERSION, getAffineClientVersion } from './version.js';
 
 /**
  * 请求超时时间（毫秒）
@@ -86,7 +87,11 @@ export async function loginWithPassword(
 	try {
 		res = await fetch(url, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+				'User-Agent': `affine-cli/${CLI_VERSION}`,
+				'x-affine-version': getAffineClientVersion()
+			},
 			body: JSON.stringify({ email, password }),
 			signal: controller.signal
 		});

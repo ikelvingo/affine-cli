@@ -29,7 +29,7 @@ affine-cli journal create [options]
 |--------|-------|----------|-------------|
 | --date | -d | No | Date in YYYY-MM-DD format. Default: today |
 | --content | -c | No | Journal content. Prefix `@` for file path |
-| --icon | -i | No | Emoji icon (e.g., `📝`, `💭`, `🎯`) |
+| --icon | -I | No | Emoji icon (e.g., `📝`, `💭`, `🎯`) |
 | --workspace | -w | No | Workspace ID |
 
 **Examples:**
@@ -117,7 +117,7 @@ affine-cli journal update [options]
 | --id | -i | No* | Document ID |
 | --date | -d | No* | Date in YYYY-MM-DD format |
 | --content | -c | No | New content |
-| --icon | -i | No | New emoji icon |
+| --icon | -I | No | New emoji icon |
 | --workspace | -w | No | Workspace ID |
 
 *Either `--id` or `--date` is required.

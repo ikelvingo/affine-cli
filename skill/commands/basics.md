@@ -8,7 +8,7 @@ Auth, workspace, and document operations.
 
 ### login
 
-Login with your Affine account.
+Login with your Affine email/password. Saves a session cookie (AFFiNE 0.27+).
 
 ```bash
 affine-cli auth login [options]
@@ -17,21 +17,24 @@ affine-cli auth login [options]
 | Option | Short | Required | Description |
 |--------|-------|----------|-------------|
 | --url | -u | No | Server URL. Default: `https://app.affine.pro` |
-| --token | -t | No | API token. If not provided, interactive login |
 | --workspace | -w | No | Workspace ID to use as default |
 | --local | - | No | Save to local `.env` instead of global config |
 | --force | -f | No | Overwrite existing config without prompts |
 
+If `AFFINE_EMAIL` and `AFFINE_PASSWORD` are set, login runs non-interactively; otherwise it prompts for email and password.
+
+> AFFiNE 0.27+ removed Personal Access Tokens (`AFFINE_API_TOKEN`). Use email/password login or a session cookie.
+
 **Examples:**
 ```bash
-# Login to cloud
-affine-cli auth login --token your_api_token
+# Login to a self-hosted instance
+affine-cli auth login --url https://affine.yourcompany.com
 
-# Login to self-hosted instance
-affine-cli auth login --url https://affine.yourcompany.com --token your_token
+# Non-interactive login via environment variables
+AFFINE_EMAIL=me@example.com AFFINE_PASSWORD=secret affine-cli auth login --url https://affine.yourcompany.com
 
 # Save to local project
-affine-cli auth login --token your_token --local
+affine-cli auth login --local
 ```
 
 ### logout
@@ -56,7 +59,7 @@ affine-cli auth status [--json]
 
 | Option | Short | Required | Description |
 |--------|-------|----------|-------------|
-| --json | -j | No | Output as JSON format |
+| --json | - | No | Output as JSON format |
 
 ---
 
@@ -67,12 +70,10 @@ affine-cli auth status [--json]
 List all accessible workspaces.
 
 ```bash
-affine-cli workspace list [options]
+affine-cli workspace list
 ```
 
-| Option | Short | Required | Description |
-|--------|-------|----------|-------------|
-| --format | -f | No | Output format: `text` (default) or `json` |
+No options. Output is JSON by default; add the global `--text` flag for human-readable text.
 
 ---
 
@@ -135,7 +136,7 @@ affine-cli doc create [options]
 | --content | -c | No | Markdown content. Prefix `@` for file path (e.g., `@readme.md`) |
 | --folder | -f | No | Parent folder ID |
 | --tags | - | No | Comma-separated tags (e.g., `work,important`) |
-| --icon | -i | No | Emoji icon (e.g., `📝`, `📁`, `💡`) |
+| --icon | -I | No | Emoji icon (e.g., `📝`, `📁`, `💡`) |
 | --workspace | -w | No | Workspace ID |
 
 **Examples:**
@@ -164,7 +165,7 @@ affine-cli doc search [options]
 | --workspace | -w | No | Workspace ID |
 | --count | -c | No | Number of results (default: 20) |
 | --match-mode | -m | No | Match mode: `substring` (default), `prefix`, `suffix`, `exact` |
-| --tag | -t | No | Filter by tag name |
+| --tag | - | No | Filter by tag name |
 
 ### delete
 
@@ -209,7 +210,7 @@ affine-cli doc update [options]
 | --title | -t | No | New title |
 | --parent | -p | No | New parent document ID. Use empty to remove |
 | --folder | -f | No | Target folder ID |
-| --icon | -i | No | New emoji icon |
+| --icon | -I | No | New emoji icon |
 | --workspace | -w | No | Workspace ID |
 
 ### replace

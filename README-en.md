@@ -6,7 +6,7 @@ Affine CLI is a lightweight command-line tool for managing Affine documents, tag
 
 ## Features
 
-- **Authentication**: Login with email/password or API token
+- **Authentication**: Login with email/password and save a session cookie (AFFiNE 0.27+)
 - **Workspace Management**: List and manage workspaces
 - **Document Operations**: Create, read, update, delete, search, copy, and append content
 - **Tag Management**: Create tags, add/remove tags from documents
@@ -41,18 +41,57 @@ npm install -g affine-cli
 # After installation, you can use affine-cli command from any directory
 ```
 
+> Requires Node.js **>= 22.19** (required by `undici@8`).
+
+### Docker
+
+The image is based on `node:24-alpine` and bundles production deps, the `affine-cli` binary, and the skill (at `/root/.agents/skills/affine-cli`).
+
+```bash
+# Build
+docker build -t affine-cli:lite .
+
+# Run (recommended: non-interactive email/password login via env)
+docker run --rm \
+  -e AFFINE_BASE_URL=https://affine.example.com \
+  -e AFFINE_EMAIL=me@example.com \
+  -e AFFINE_PASSWORD=secret \
+  -e AFFINE_WORKSPACE_ID=your-workspace-id \
+  affine-cli:lite doc list
+
+# Or use a pre-obtained session cookie
+docker run --rm \
+  -e AFFINE_BASE_URL=https://affine.example.com \
+  -e AFFINE_COOKIE='affine_session=...; affine_csrf_token=...' \
+  affine-cli:lite auth status
+```
+
+Notes:
+- The session cookie is written to `/root/.affine-cli/affine-cli.env` **inside the container** and is lost on restart; mount a volume to persist it: `-v affine-config:/root/.affine-cli`.
+- For unattended use prefer `AFFINE_EMAIL` + `AFFINE_PASSWORD` (the cookie expires in ~7 days and will be refreshed by auto-login).
+- The container must be able to reach your self-hosted AFFINE (use the service name on the same Docker network, or `host.docker.internal`).
+
 ## Configuration
 
-Create a `.env` file in your project directory or use global configuration:
+Run the login command to sign in and save a session cookie:
+
+```bash
+affine-cli auth login --url https://your-affine.example.com
+```
+
+You can also create a `.env` file in your project directory or use global configuration:
 
 ```bash
 # Global config: ~/.affine-cli/affine-cli.env
 # Local config: .env in project directory
 
 AFFINE_BASE_URL=https://app.affine.pro
-AFFINE_API_TOKEN=your_api_token
+AFFINE_COOKIE=affine_session=...
 AFFINE_WORKSPACE_ID=your_workspace_id
 ```
+
+> AFFiNE 0.27+ no longer supports Personal Access Tokens (`AFFINE_API_TOKEN`); use a session cookie instead.
+> For unattended use, set `AFFINE_EMAIL` + `AFFINE_PASSWORD` and the CLI will log in automatically (storing the password is not recommended).
 
 Configuration priority: Environment variables > Local `.env` > Global `~/.affine-cli/affine-cli.env`
 
@@ -109,7 +148,7 @@ affine-cli database columns --doc-id <doc-id> --db-id <db-id>
 
 | Command    | Description                 | Parameters                                                                                                                          |
 | ---------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| **login**  | Login with account or Token | `--url` Server URL <br>`--token` API Token <br>`--workspace` Workspace ID <br>`--local` Save to local <br>`--force` Force overwrite |
+| **login**  | Login with email/password and save a session cookie | `--url` Server URL <br>`--workspace` Workspace ID <br>`--local` Save to local <br>`--force` Force overwrite |
 | **logout** | Logout                      | `--local` Delete local config                                                                                                       |
 | **status** | Get login status            | `--json` JSON format output                                                                                                         |
 
@@ -245,6 +284,7 @@ src/
 └── utils/              # Utility functions
     ├── config.ts
     ├── auth.ts
+    ├── authSession.ts
     ├── graphqlClient.ts
     ├── wsClient.ts
     ├── cliUtils.ts

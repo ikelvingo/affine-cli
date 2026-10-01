@@ -6,7 +6,7 @@ Affine CLI 是一个轻量级的命令行工具，用于管理 Affine 文档、�
 
 ## 功能特性
 
-- **认证**: 使用邮箱/密码或 API 令牌登录
+- **认证**: 使用邮箱/密码登录并保存会话 Cookie（兼容 AFFiNE 0.27+）
 - **工作区管理**: 列出和管理工作区
 - **文档操作**: 创建、读取、更新、删除、搜索、复制和追加内容
 - **标签管理**: 创建标签、向文档添加/移除标签
@@ -41,18 +41,57 @@ npm install -g affine-cli
 # 安装完成后，可在任意目录使用 affine-cli 命令
 ```
 
+> 需要 Node.js **>= 22.19**（依赖 `undici@8` 的要求）。
+
+### Docker 部署
+
+镜像基于 `node:24-alpine`，内含生产依赖、`affine-cli` 可执行文件与 skill（`/root/.agents/skills/affine-cli`）。
+
+```bash
+# 构建
+docker build -t affine-cli:lite .
+
+# 运行（推荐：用环境变量做无交互邮箱/密码登录）
+docker run --rm \
+  -e AFFINE_BASE_URL=https://affine.example.com \
+  -e AFFINE_EMAIL=me@example.com \
+  -e AFFINE_PASSWORD=secret \
+  -e AFFINE_WORKSPACE_ID=your-workspace-id \
+  affine-cli:lite doc list
+
+# 也可使用预先获取的会话 Cookie
+docker run --rm \
+  -e AFFINE_BASE_URL=https://affine.example.com \
+  -e AFFINE_COOKIE='affine_session=...; affine_csrf_token=...' \
+  affine-cli:lite auth status
+```
+
+注意事项：
+- 会话 Cookie 默认写在容器内 `/root/.affine-cli/affine-cli.env`，**容器重启即丢失**；需持久化时挂载卷：`-v affine-config:/root/.affine-cli`。
+- 无人值守更推荐 `AFFINE_EMAIL` + `AFFINE_PASSWORD`（Cookie 约 7 天过期，会自动重新登录）。
+- 访问自托管 Affine 时，容器需能路由到该服务（同一 Docker 网络用服务名，或 `host.docker.internal`）。
+
 ## 配置
 
-在项目目录创建 `.env` 文件，或使用全局配置：
+推荐直接运行登录命令，自动写入会话 Cookie：
+
+```bash
+affine-cli auth login --url https://your-affine.example.com
+```
+
+也可手动在项目目录创建 `.env` 文件，或使用全局配置：
 
 ```bash
 # 全局配置: ~/.affine-cli/affine-cli.env
 # 本地配置: 项目目录中的 .env
 
 AFFINE_BASE_URL=https://app.affine.pro
-AFFINE_API_TOKEN=your_api_token
+AFFINE_COOKIE=affine_session=...
 AFFINE_WORKSPACE_ID=your_workspace_id
 ```
+
+> AFFiNE 0.27 起不再支持 Personal Access Token（`AFFINE_API_TOKEN`），请改用会话 Cookie。
+> 无人值守场景可设置 `AFFINE_EMAIL` + `AFFINE_PASSWORD`，CLI 会自动登录获取 Cookie（不建议落盘密码）。
 
 配置优先级：环境变量 > 本地 `.env` > 全局 `~/.affine-cli/affine-cli.env`
 
@@ -109,7 +148,7 @@ affine-cli database columns --doc-id <doc-id> --db-id <db-id>
 
 | 命令       | 说明                  | 参数                                                                                                  |
 | ---------- | --------------------- | ----------------------------------------------------------------------------------------------------- |
-| **login**  | 使用账号或 Token 登录 | `--url` 服务器地址 `--token` API Token `--workspace` 工作区ID `--local` 保存到本地 `--force` 强制覆盖 |
+| **login**  | 使用邮箱/密码登录并保存会话 Cookie | `--url` 服务器地址 `--workspace` 工作区ID `--local` 保存到本地 `--force` 强制覆盖 |
 | **logout** | 退出登录              | `--local` 删除本地配置                                                                                |
 | **status** | 获取登录状态          | `--json` JSON格式输出                                                                                 |
 
@@ -245,6 +284,7 @@ src/
 └── utils/              # 工具函数
     ├── config.ts
     ├── auth.ts
+    ├── authSession.ts
     ├── graphqlClient.ts
     ├── wsClient.ts
     ├── cliUtils.ts

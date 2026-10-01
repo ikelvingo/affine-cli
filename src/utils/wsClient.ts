@@ -23,9 +23,10 @@
 import { io, Socket } from 'socket.io-client';
 import * as Y from 'yjs';
 import { getApiConfig } from './config.js';
+import { resolveAuth } from './authSession.js';
+import { getAffineClientVersion } from './version.js';
 import { getWorkspaceTagOptions } from '../core/tags.js';
 
-const DEFAULT_WS_CLIENT_VERSION = '0.26.0';
 const WS_CONNECT_TIMEOUT_MS = 10000;
 const WS_ACK_TIMEOUT_MS = 10000;
 
@@ -63,16 +64,13 @@ export function wsUrlFromGraphQLEndpoint(endpoint: string): string {
 /**
  * createWorkspaceSocket: 连接工作区 WebSocket
  *
- * @param wsUrl - WebSocket URL
- * @param cookie - 认证 Cookie（可选）
- * @param bearer - Bearer Token（可选）
  * @returns Socket.io 连接对象
- * @throws 连接超时或连接失败
+ * @throws 连接超时、连接失败或未配置认证
  *
  * 注意事项：
  * - 使用 websocket 传输
  * - 默认超时 10 秒
- * - 支持自定义认证头
+ * - 通过 resolveAuth() 获取会话 Cookie 并注入握手头
  */
 export async function createWorkspaceSocket(): Promise<Socket> {
 	if (_sharedSocket && _sharedSocket.connected) {
@@ -82,10 +80,11 @@ export async function createWorkspaceSocket(): Promise<Socket> {
 		return _sharedSocketPromise;
 	}
 
-	const { apiUrl, apiToken } = getApiConfig();
+	const { apiUrl } = getApiConfig();
+	const auth = await resolveAuth();
 
 	const extraHeaders: Record<string, string> = {};
-	if (apiToken) extraHeaders['Authorization'] = `Bearer ${apiToken}`;
+	if (auth.kind === 'cookie') extraHeaders['Cookie'] = auth.cookie;
 
 	const url = wsUrlFromGraphQLEndpoint(apiUrl);
 	const socket = io(url, {
@@ -147,7 +146,7 @@ export async function joinWorkspace(socket: Socket, workspaceId: string) {
 		const ack = await socket.timeout(WS_ACK_TIMEOUT_MS).emitWithAck('space:join', {
 			spaceType: 'workspace',
 			spaceId: workspaceId,
-			clientVersion: DEFAULT_WS_CLIENT_VERSION
+			clientVersion: getAffineClientVersion()
 		});
 
 		if (ack?.error) {
@@ -317,10 +316,7 @@ export function extractTagNames(
  * - 提取所有页面的标题和标签信息
  * - 返回 Map<docId, { title, tags, createDate, updateDate }>
  *
- * @param wsUrl - WebSocket URL
  * @param workspaceId - 工作区 ID
- * @param cookie - 认证 Cookie（可选）
- * @param bearer - Bearer Token（可选）
  * @returns 文档信息 Map
  */
 export async function getWorkspaceDocs(workspaceId: string) {

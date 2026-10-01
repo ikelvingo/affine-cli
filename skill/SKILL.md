@@ -1,42 +1,77 @@
 ---
 name: affine-cli
 description: Command-line tool for managing Affine documents, tags, folders, collections, files, databases, comments, journals and workspaces. Supports both cloud (app.affine.pro) and self-hosted deployments.
-homepage: https://github.com/woodcoal/affine-cli
+homepage: https://github.com/ikelvingo/affine-cli
 tags: [affine, document-management, cli, markdown, notes, wiki, database, collaboration, self-hosted]
 metadata:
   openclaw:
     requires:
-      bins: [node, npm]
-      env:
-        AFFINE_API_TOKEN: required
-        AFFINE_BASE_URL: "optional — defaults to https://app.affine.pro"
-        AFFINE_WORKSPACE_ID: optional
-    note: Configuration loads from: env > local .env > ~/.affine-cli/affine-cli.env
+      bins: [affine-cli]
+    envVars:
+      - name: AFFINE_COOKIE
+        required: false
+        description: 会话 Cookie（AFFiNE 0.27+）。通常由 `affine-cli auth login` 写入 ~/.affine-cli/affine-cli.env，无需手动设置。
+      - name: AFFINE_BASE_URL
+        required: false
+        description: Affine 服务器地址，默认 https://app.affine.pro
+      - name: AFFINE_WORKSPACE_ID
+        required: false
+        description: 默认工作区 ID
+      - name: AFFINE_EMAIL
+        required: false
+        description: 非交互自动登录邮箱（与 AFFINE_PASSWORD 配对）
+      - name: AFFINE_PASSWORD
+        required: false
+        description: 非交互自动登录密码
+      - name: AFFINE_CLIENT_VERSION
+        required: false
+        description: 客户端版本头，默认 0.26.0（AFFiNE 0.27+ 服务端要求客户端版本不低于 0.26，低于该值会返回 403 UNSUPPORTED_CLIENT_VERSION）
+    note: The CLI resolves auth itself from env > local .env > ~/.affine-cli/affine-cli.env. Run `affine-cli auth login` once to save a session cookie (AFFiNE 0.27+ no longer supports API tokens).
 ---
 
 # Affine CLI
 
 Command-line tool for managing Affine documents and workspaces. Works with both cloud and self-hosted Affine instances.
 
-## Installation Check
+## Installation Check (do this first)
 
-First, verify affine-cli is installed:
+Installing this skill does **not** install `affine-cli` — it is a separate Node binary. Before any Affine operation, confirm it is available, and only install it if it is missing.
 
-```bash
-which affine-cli || npm list -g affine-cli
-```
+> **Never install from the npm registry.** The npm package `affine-cli` is the upstream project, which cannot authenticate against AFFiNE 0.27+ (it still depends on the removed Personal Access Token), so it fails with 403 / auth errors. Install from this fork's source instead.
 
-If not installed, install globally:
+1. Check availability:
 
 ```bash
-npm install -g affine-cli
+# macOS / Linux
+command -v affine-cli
+
+# Windows (PowerShell)
+Get-Command affine-cli -ErrorAction SilentlyContinue
 ```
 
-Or run directly with npx:
+If this succeeds, **stop here** and skip to the Authentication step — do not reinstall.
+
+2. If missing, install it from this fork's source (Node.js >= 22.19 required):
 
 ```bash
-npx affine-cli <command>
+git clone https://github.com/ikelvingo/affine-cli.git
+cd affine-cli
+npm ci
+npm run build
+npm link          # puts `affine-cli` on PATH
 ```
+
+3. Verify:
+
+```bash
+affine-cli --version
+```
+
+Notes:
+- **Container images**: this fork's Dockerfile builds the CLI, links it onto `PATH` (`ENTRYPOINT ["affine-cli"]`) and symlinks the skill to `/root/.agents/skills/affine-cli`. In that case step 1 already succeeds — never install anything inside the image.
+- **OpenClaw**: this skill declares `metadata.openclaw.requires.bins: [affine-cli]` as a gate, so it will **not appear** until `affine-cli` exists on `PATH`. There is deliberately **no** `install` spec, so the platform will not pull the package from npm — install the binary from source first, then reload skills.
+- **Sandboxed agents**: the binary and credentials must exist **inside** the sandbox (e.g. via `setupCommand` or a custom image); host `PATH` and `~/.affine-cli/affine-cli.env` are not shared.
+- **Generic skills agents** (Claude Code / opencode / etc.): install the binary from source as above, then run the Authentication step.
 
 ## When to Use
 
@@ -48,8 +83,8 @@ npx affine-cli <command>
 ## Quick Start
 
 ```bash
-# 1. Login (get token from https://app.affine.pro/settings/tokens)
-affine-cli auth login --token YOUR_TOKEN
+# 1. Login with email/password (saves a session cookie)
+affine-cli auth login
 
 # 2. Check status
 affine-cli auth status
@@ -63,7 +98,7 @@ affine-cli doc list
 
 **Self-hosted:**
 ```bash
-affine-cli auth login --url https://your-affine.example.com --token YOUR_TOKEN
+affine-cli auth login --url https://your-affine.example.com
 ```
 
 ## Command Overview
@@ -78,7 +113,7 @@ affine-cli auth login --url https://your-affine.example.com --token YOUR_TOKEN
 | **collection** | list, info, create, update, delete, add, remove |
 | **file** | upload, delete, clean |
 | **database** | list, columns, query, create, insert, update, delete, remove |
-| **comments** | list, create, update, delete, resolve |
+| **comment** | list, create, update, delete, resolve |
 | **journal** | list, create, info, append, update |
 
 ## Common Examples
@@ -181,9 +216,12 @@ affine-cli database update --doc DOC_ID --id DB_ID --values '{"Status":"Done"}' 
 - Local: `<project>/.env`
 
 **Environment variables:**
-- `AFFINE_API_TOKEN` - Required, get from Settings → Tokens
+- `AFFINE_COOKIE` - Session cookie, saved by `affine-cli auth login` (AFFiNE 0.27+)
 - `AFFINE_BASE_URL` - Server URL (default: https://app.affine.pro)
 - `AFFINE_WORKSPACE_ID` - Default workspace
+- `AFFINE_EMAIL` / `AFFINE_PASSWORD` - Optional non-interactive auto-login
+
+**Output format:** every command prints **JSON by default**, so parse stdout as JSON. Add the global `--text` flag (`affine-cli --text doc list`, or `affine-cli doc list --text`) for human-readable text.
 
 ## Reference Files
 
@@ -197,6 +235,7 @@ affine-cli database update --doc DOC_ID --id DB_ID --values '{"Status":"Done"}' 
 
 ## Support
 
-- GitHub: https://github.com/woodcoal/affine-cli
-- Issues: https://github.com/woodcoal/affine-cli/issues
-- Docs: https://deepwiki.com/toeverything/AFFiNE
+- GitHub: https://github.com/ikelvingo/affine-cli
+- Issues: https://github.com/ikelvingo/affine-cli/issues
+- Upstream project this fork is based on: https://github.com/woodcoal/affine-cli
+- AFFiNE docs: https://deepwiki.com/toeverything/AFFiNE
